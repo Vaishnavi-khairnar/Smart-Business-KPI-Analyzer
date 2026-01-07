@@ -1,7 +1,10 @@
-   fastapi
-   uvicorn[standard]
-   pydantic
-   python-multipart
-   python-jose[cryptography]
-   passlib[bcrypt]
-   python-dotenv
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+pandas
+openpyxl
+numpy

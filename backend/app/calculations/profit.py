@@ -27,7 +27,7 @@ class ProfitCalculation(BaseCalculation):
                period_end: End date for calculation period
                
            Returns:
-               Dictionary containing profit value and metadata
+               Dictionary containing profit value and extra_data
            """
            try:
                if 'sales' not in data or 'costs' not in data:

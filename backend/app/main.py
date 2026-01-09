@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import kpis
 from app.core.config import settings
+from app.core.init_db import init_db
+from app.api.endpoints import api_router
+
 
 app = FastAPI(
        title="Smart Business KPI Analyzer API",
@@ -19,7 +22,7 @@ app.add_middleware(
    )
 
    # Include API routers
-app.include_router(kpis.router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/", tags=["Root"])
 async def read_root():
@@ -34,3 +37,10 @@ async def health_check():
        Health check endpoint for monitoring.
        """
        return {"status": "healthy", "service": "KPI Analyzer API"}
+@app.on_event("startup")
+async def startup_event():
+       """
+       Initialize database on application startup.
+       """
+       init_db()
+       print("Database initialized successfully!")

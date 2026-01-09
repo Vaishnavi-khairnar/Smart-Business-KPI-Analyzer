@@ -33,7 +33,7 @@ class KPIValue(BaseModel):
        period_start: datetime
        period_end: datetime
        calculated_at: datetime
-       metadata: Optional[dict] = None
+       extra_data: Optional[dict] = None
        
        class Config:
            from_attributes = True
@@ -43,7 +43,7 @@ class KPIValueCreate(BaseModel):
        value: float
        period_start: datetime
        period_end: datetime
-       metadata: Optional[dict] = None
+       extra_data: Optional[dict] = None
 
 class KPIWithValues(KPI):
        values: List[KPIValue] = []

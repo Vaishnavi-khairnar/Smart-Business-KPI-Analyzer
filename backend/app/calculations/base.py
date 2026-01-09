@@ -27,7 +27,7 @@ class BaseCalculation(ABC):
                period_end: End date for calculation period
                
            Returns:
-               Dictionary containing the KPI value and metadata
+               Dictionary containing the KPI value and extra_data
            """
            pass
        

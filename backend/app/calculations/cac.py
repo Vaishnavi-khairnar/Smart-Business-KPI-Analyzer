@@ -28,7 +28,7 @@ class CACCalculation(BaseCalculation):
                period_end: End date for calculation period
                
            Returns:
-               Dictionary containing CAC value and metadata
+               Dictionary containing CAC value and extra_data
            """
            try:
                if 'marketing' not in data or 'customers' not in data:

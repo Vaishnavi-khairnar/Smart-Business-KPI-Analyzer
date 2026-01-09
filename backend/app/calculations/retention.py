@@ -28,7 +28,7 @@ class RetentionCalculation(BaseCalculation):
                period_end: End date for calculation period
                
            Returns:
-               Dictionary containing retention rate value and metadata
+               Dictionary containing retention rate value and extra_data
            """
            try:
                if 'customers' not in data:

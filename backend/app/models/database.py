@@ -12,6 +12,7 @@ class User(Base):
        email = Column(String(100), unique=True, index=True)
        hashed_password = Column(String(255))
        is_active = Column(Boolean, default=True)
+       is_superuser = Column(Boolean, default=False)  # Add this field
        created_at = Column(DateTime, default=func.now())
        updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
    

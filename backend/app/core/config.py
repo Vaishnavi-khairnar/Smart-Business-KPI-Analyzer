@@ -8,6 +8,10 @@ class Settings(BaseSettings):
        version: str = "1.0.0"
        api_v1_str: str = "/api/v1"
        
+       # Add these authentication settings
+       access_token_expire_minutes: int = 30
+       algorithm: str = "HS256"
+       
        # Security settings
        secret_key: str = "your-secret-key-here-change-in-production"
        algorithm: str = "HS256"
@@ -15,6 +19,8 @@ class Settings(BaseSettings):
        
        # Database settings
        database_url: str = "sqlite:///./kpi_analyzer.db"
+
+       
        
        class Config:
            env_file = ".env"

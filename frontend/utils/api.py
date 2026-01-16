@@ -157,7 +157,71 @@ class APIClient:
             payload["business_units"] = business_units
 
         return self.post("kpis/calculate", json=payload)
+def get_scheduled_reports(self) -> List[Dict[str, Any]]:
+    """Get list of scheduled reports
+    
+    Returns:
+        List of scheduled reports
+    """
+    response = self._make_request('GET', 'reports/scheduled')
+    return response.json()
 
+def schedule_report(self, report_config: Dict[str, Any]) -> Dict[str, Any]:
+    """Schedule a new report
+    
+    Args:
+        report_config: Report configuration
+        
+    Returns:
+        Dictionary with scheduled report details
+    """
+    response = self._make_request('POST', 'reports/schedule', json=report_config)
+    return response.json()
+
+def delete_scheduled_report(self, report_id: str) -> Dict[str, Any]:
+    """Delete a scheduled report
+    
+    Args:
+        report_id: ID of the report to delete
+        
+    Returns:
+        Dictionary with deletion result
+    """
+    response = self._make_request('DELETE', f'reports/scheduled/{report_id}')
+    return response.json()
+
+def get_report_templates(self) -> List[Dict[str, Any]]:
+    """Get available report templates
+    
+    Returns:
+        List of report templates
+    """
+    response = self._make_request('GET', 'reports/templates')
+    return response.json()
+
+def generate_report(self, report_config: Dict[str, Any], format: str = "excel") -> bytes:
+    """Generate a report in specified format
+    
+    Args:
+        report_config: Report configuration
+        format: Export format (csv, excel, pdf)
+        
+    Returns:
+        Report data as bytes
+    """
+    params = report_config.copy()
+    
+    if format == "csv":
+        params['include_summary'] = report_config.get('include_summary', True)
+        response = self._make_request('GET', 'reports/export/csv', params=params)
+    elif format == "excel":
+        params['include_charts'] = report_config.get('include_charts', True)
+        response = self._make_request('GET', 'reports/export/excel', params=params)
+    else:  # PDF
+        params['template'] = report_config.get('template', 'standard')
+        response = self._make_request('GET', 'reports/export/pdf', params=params)
+    
+    return response.content
 
 # 🔥 DEBUG CONFIRMATION
 print("🔥 utils.api LOADED FROM:", __file__)

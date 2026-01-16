@@ -3,36 +3,34 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 from datetime import datetime
 
-from app.models.database import (
-    SalesData,
-    CostData,
-    MarketingData,
-    CustomerData,
-)
+from app.models.sale import Sale
+from app.models.cost import Cost
+from app.models.marketing_spend import MarketingSpend
+from app.models.customer import Customer
 from .base import CRUDBase
 
 
 # =====================================================
 # SALES DATA CRUD
 # =====================================================
-class CRUDSalesData(CRUDBase[SalesData, dict, dict]):
+class CRUDSalesData(CRUDBase[Sale, dict, dict]):
     def get_by_date_range(
         self,
         db: Session,
         *,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[SalesData]:
+    ) -> List[Sale]:
         """
         Get sales data within a date range (DATE-safe).
         """
         return (
-            db.query(SalesData)
+            db.query(Sale)
             .filter(
-                func.date(SalesData.date) >= start_date.date(),
-                func.date(SalesData.date) <= end_date.date(),
+                func.date(Sale.sale_date) >= start_date.date(),
+                func.date(Sale.sale_date) <= end_date.date(),
             )
-            .order_by(SalesData.date)
+            .order_by(Sale.sale_date)
             .all()
         )
 
@@ -40,24 +38,24 @@ class CRUDSalesData(CRUDBase[SalesData, dict, dict]):
 # =====================================================
 # COST DATA CRUD
 # =====================================================
-class CRUDCostData(CRUDBase[CostData, dict, dict]):
+class CRUDCostData(CRUDBase[Cost, dict, dict]):
     def get_by_date_range(
         self,
         db: Session,
         *,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[CostData]:
+    ) -> List[Cost]:
         """
         Get cost data within a date range (DATE-safe).
         """
         return (
-            db.query(CostData)
+            db.query(Cost)
             .filter(
-                func.date(CostData.date) >= start_date.date(),
-                func.date(CostData.date) <= end_date.date(),
+                func.date(Cost.cost_date) >= start_date.date(),
+                func.date(Cost.cost_date) <= end_date.date(),
             )
-            .order_by(CostData.date)
+            .order_by(Cost.cost_date)
             .all()
         )
 
@@ -65,24 +63,24 @@ class CRUDCostData(CRUDBase[CostData, dict, dict]):
 # =====================================================
 # MARKETING DATA CRUD
 # =====================================================
-class CRUDMarketingData(CRUDBase[MarketingData, dict, dict]):
+class CRUDMarketingData(CRUDBase[MarketingSpend, dict, dict]):
     def get_by_date_range(
         self,
         db: Session,
         *,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[MarketingData]:
+    ) -> List[MarketingSpend]:
         """
         Get marketing data within a date range (DATE-safe).
         """
         return (
-            db.query(MarketingData)
+            db.query(MarketingSpend)
             .filter(
-                func.date(MarketingData.date) >= start_date.date(),
-                func.date(MarketingData.date) <= end_date.date(),
+                func.date(MarketingSpend.spend_date) >= start_date.date(),
+                func.date(MarketingSpend.spend_date) <= end_date.date(),
             )
-            .order_by(MarketingData.date)
+            .order_by(MarketingSpend.spend_date)
             .all()
         )
 
@@ -90,24 +88,24 @@ class CRUDMarketingData(CRUDBase[MarketingData, dict, dict]):
 # =====================================================
 # CUSTOMER DATA CRUD
 # =====================================================
-class CRUDCustomerData(CRUDBase[CustomerData, dict, dict]):
+class CRUDCustomerData(CRUDBase[Customer, dict, dict]):
     def get_by_date_range(
         self,
         db: Session,
         *,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[CustomerData]:
+    ) -> List[Customer]:
         """
         Get customers created within a date range (DATE-safe).
         """
         return (
-            db.query(CustomerData)
+            db.query(Customer)
             .filter(
-                func.date(CustomerData.signup_date) >= start_date.date(),
-                func.date(CustomerData.signup_date) <= end_date.date(),
+                func.date(Customer.created_at) >= start_date.date(),
+                func.date(Customer.created_at) <= end_date.date(),
             )
-            .order_by(CustomerData.signup_date)
+            .order_by(Customer.created_at)
             .all()
         )
 
@@ -116,13 +114,13 @@ class CRUDCustomerData(CRUDBase[CustomerData, dict, dict]):
         db: Session,
         *,
         date: datetime,
-    ) -> List[CustomerData]:
+    ) -> List[Customer]:
         """
         Get customers active at a specific date.
         """
         return (
-            db.query(CustomerData)
-            .filter(func.date(CustomerData.signup_date) <= date.date())
+            db.query(Customer)
+            .filter(func.date(Customer.created_at) <= date.date())
             .all()
         )
 
@@ -130,7 +128,7 @@ class CRUDCustomerData(CRUDBase[CustomerData, dict, dict]):
 # =====================================================
 # CRUD INSTANCES
 # =====================================================
-crud_sales_data = CRUDSalesData(SalesData)
-crud_cost_data = CRUDCostData(CostData)
-crud_marketing_data = CRUDMarketingData(MarketingData)
-crud_customer_data = CRUDCustomerData(CustomerData)
+crud_sales_data = CRUDSalesData(Sale)
+crud_cost_data = CRUDCostData(Cost)
+crud_marketing_data = CRUDMarketingData(MarketingSpend)
+crud_customer_data = CRUDCustomerData(Customer)

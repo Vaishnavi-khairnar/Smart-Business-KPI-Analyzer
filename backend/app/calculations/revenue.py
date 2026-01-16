@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from datetime import datetime
 from .base import BaseCalculation
-from app.models.database import SalesData
+from app.models.sale import Sale
 
 
 class RevenueCalculation(BaseCalculation):
@@ -30,7 +30,7 @@ class RevenueCalculation(BaseCalculation):
             if "sales" not in data:
                 raise ValueError("Sales data is required for revenue calculation")
 
-            sales: List[SalesData] = data["sales"]
+            sales: List[Sale] = data["sales"]
 
             if not sales:
                 raise ValueError("No sales data available for the selected period")

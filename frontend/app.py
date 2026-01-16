@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 # Import pages
 from pages import dashboard, upload, settings, login, register
-
+from pages import reports
 
 # -------------------------
 # GLOBAL CSS
@@ -161,6 +161,9 @@ def main():
         if datetime.now(timezone.utc) > st.session_state.token_expires_at:
             handle_logout()
             st.error("Session expired. Please log in again.")
+    
+    if page == "Reports":
+        reports.render_reports_page()
 
 
 # -------------------------

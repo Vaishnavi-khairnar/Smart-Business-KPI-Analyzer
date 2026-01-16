@@ -8,8 +8,8 @@ import numpy as np
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.api.endpoints.auth import me as get_current_user
+from app.core.database import get_db
+from api.endpoints.auth import me as get_current_user
 from app.schemas.user import User
 from app.services.dashboard_service import DashboardService
 

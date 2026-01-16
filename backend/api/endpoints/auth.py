@@ -10,8 +10,11 @@ from app.schemas.auth import AuthResponse
 from app.services.auth import AuthService
 from app.utils.error_handling import KPIError
 from app.utils.auth import create_access_token
+from app.models.user import User
 
-# 🔐 OAuth2 scheme (standard)
+# =====================================================
+# OAuth2 scheme (JWT)
+# =====================================================
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 router = APIRouter(
@@ -67,7 +70,10 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         }
 
     except KPIError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -100,7 +106,10 @@ async def refresh_token(
         }
 
     except KPIError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -123,6 +132,24 @@ async def me(
         }
 
     except KPIError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# DEPENDENCY: GET CURRENT USER (IMPORTANT)
+# =====================================================
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    FastAPI dependency used to protect routes.
+    Can be imported in other modules (reports, dashboard, etc.)
+    """
+    auth_service = AuthService()
+    return auth_service.get_current_user(token, db)

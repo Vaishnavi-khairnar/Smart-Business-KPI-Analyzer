@@ -1,23 +1,25 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
 
 
-class BusinessUnit(Base):
-    __tablename__ = "business_units"
+class KPI(Base):
+    __tablename__ = "kpis"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
-    description = Column(String(255), nullable=True)
-
-    is_active = Column(Boolean, default=True)
+    description = Column(String(500), nullable=True)
+    unit = Column(String(50), nullable=False)
+    formula = Column(String(500), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
+    
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -25,5 +27,8 @@ class BusinessUnit(Base):
         nullable=False
     )
 
+    # Relationship with KPIValue
+    values = relationship("KPIValue", back_populates="kpi")
+
     def __repr__(self):
-        return f"<BusinessUnit(id={self.id}, name='{self.name}')>" 
+        return f"<KPI(id={self.id}, name='{self.name}')>"

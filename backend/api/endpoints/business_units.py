@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.database import get_db
+from app.core.database import get_db
 from app.schemas.business_unit import BusinessUnitResponse
 from app.crud.business_unit import get_active_business_units
 

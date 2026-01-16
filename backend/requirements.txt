@@ -10,3 +10,4 @@ openpyxl
 numpy
 sqlalchemy
 alembic
+reportlab

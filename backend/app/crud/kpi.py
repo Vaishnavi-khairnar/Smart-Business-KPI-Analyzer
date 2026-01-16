@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 
-from app.models.database import KPI, KPIValue
+from app.models.kpi_model import KPI
+from app.models.kpi_value import KPIValue
 from app.schemas.kpi import KPICreate, KPIUpdate, KPIValueCreate
 from .base import CRUDBase
 

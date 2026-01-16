@@ -1,53 +1,51 @@
 from typing import List
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException, status
-from app.models.database import KPI, KPIValue
-from app.schemas.kpi import KPICreate, KPIUpdate, KPIRead, KPIValueCreate
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 
+from app.models.database import KPI, KPIValue
+from app.schemas.kpi import KPICreate, KPIUpdate, KPIValueCreate
 from .base import CRUDBase
 
 
+# =====================================================
+# KPI CRUD
+# =====================================================
 class CRUDKPI(CRUDBase[KPI, KPICreate, KPIUpdate]):
+
     def get_by_name(self, db: Session, *, name: str) -> KPI | None:
         """
         Get KPI by name.
         """
         return db.query(KPI).filter(KPI.name == name).first()
-    
-    def get_by_username(self, db: Session, *, username: str):
-       """
-       Get a user by username.
-       """
-       return db.query(self.model).filter(self.model.username == username).first()
-   
-    def create(self, db: Session, *, obj_in: dict):
-       """
-       Create a new user.
-       """
-       try:
-           obj_data = obj_in.copy()
-           
-           # Hash password if provided
-           if "password" in obj_data:
-               from app.utils.auth import get_password_hash
-               obj_data["hashed_password"] = get_password_hash(obj_data["password"])
-               # Remove plain password from stored data
-               del obj_data["password"]
-           
-           db_obj = self.model(**obj_data)
-           db.add(db_obj)
-           db.commit()
-           db.refresh(db_obj)
-           return db_obj
-       except IntegrityError as e: # pyright: ignore[reportUndefinedVariable]
-           db.rollback()
-           raise HTTPException(
-               status_code=400,
-               detail=f"Integrity error: {str(e)}"
-           )
+
+    def create(self, db: Session, *, obj_in: KPICreate) -> KPI:
+        """
+        Create a new KPI.
+        """
+        try:
+            # ✅ Convert Pydantic model → dict (Pydantic v2)
+            obj_data = obj_in.model_dump()
+
+            db_obj = self.model(**obj_data)
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
+            return db_obj
+
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="KPI with this name already exists"
+            )
 
 
+# =====================================================
+# KPI VALUE CRUD
+# =====================================================
 class CRUDKPIValue(CRUDBase[KPIValue, KPIValueCreate, dict]):
+
     def get_by_kpi_id(
         self,
         db: Session,
@@ -77,12 +75,14 @@ class CRUDKPIValue(CRUDBase[KPIValue, KPIValueCreate, dict]):
         """
         Create a new KPI value associated with a KPI.
         """
-        obj_data = obj_in.dict()
+        obj_data = obj_in.model_dump()
         obj_data["kpi_id"] = kpi_id
+
         return super().create(db, obj_in=obj_data)
-    
 
 
-# Create CRUD instances
+# =====================================================
+# CRUD INSTANCES
+# =====================================================
 crud_kpi = CRUDKPI(KPI)
 crud_kpi_value = CRUDKPIValue(KPIValue)

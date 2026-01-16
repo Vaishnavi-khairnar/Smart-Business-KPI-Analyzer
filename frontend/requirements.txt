@@ -3,3 +3,6 @@
    plotly
    requests
    python-dotenv
+   numpy
+   python-dateutil
+   openpyxl

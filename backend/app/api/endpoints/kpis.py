@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from datetime import datetime
 
 from app.core.database import get_db
 from app.crud import crud_kpi
@@ -16,6 +15,26 @@ from app.services.kpi_calculator import KPICalculator
 from app.utils.error_handling import KPIError
 
 router = APIRouter(prefix="/kpis", tags=["KPIs"])
+
+
+# =====================================================
+# GET KPI TYPES  (⚠ MUST BE FIRST)
+# =====================================================
+@router.get("/types")
+async def get_kpi_types():
+    """
+    Returns available KPI types
+    """
+    return {
+        "message": "KPI types retrieved successfully",
+        "data": [
+            "Financial",
+            "Operational",
+            "HR",
+            "Sales",
+            "Customer",
+        ],
+    }
 
 
 # =====================================================

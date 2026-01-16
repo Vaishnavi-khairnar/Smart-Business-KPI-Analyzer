@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import pages
 from pages import dashboard, upload, settings, login, register
@@ -41,12 +41,42 @@ def load_global_css():
 # SESSION INIT
 # -------------------------
 def init_session():
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-        st.session_state.user = None
-        st.session_state.token = None
-        st.session_state.token_expires_at = None
-        st.session_state.current_page = "Register"
+    defaults = {
+        "authenticated": False,
+        "user": None,
+        "token": None,
+        "token_expires_at": None,
+        "current_page": "Register"
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+# -------------------------
+# LOGOUT HANDLER
+# -------------------------
+def handle_logout():
+    st.session_state.authenticated = False
+    st.session_state.user = None
+    st.session_state.token = None
+    st.session_state.token_expires_at = None
+    st.session_state.current_page = "Login"
+    st.rerun()
+
+
+# -------------------------
+# NORMALIZE TOKEN EXPIRY (🔥 FIX)
+# -------------------------
+def normalize_token_expiry():
+    """
+    Ensures token_expires_at is timezone-aware (UTC)
+    """
+    expiry = st.session_state.token_expires_at
+
+    if isinstance(expiry, datetime) and expiry.tzinfo is None:
+        st.session_state.token_expires_at = expiry.replace(tzinfo=timezone.utc)
 
 
 # -------------------------
@@ -63,8 +93,12 @@ def main():
     load_global_css()
     init_session()
 
+    # Normalize token expiry once per run
+    if st.session_state.token_expires_at:
+        normalize_token_expiry()
+
     # -------------------------
-    # SIDEBAR NAVIGATION
+    # SIDEBAR
     # -------------------------
     with st.sidebar:
         st.title("Navigation")
@@ -90,10 +124,18 @@ def main():
                 st.session_state.current_page = "Register"
 
     # -------------------------
-    # PAGE ROUTING
+    # ROUTE PROTECTION
     # -------------------------
     page = st.session_state.current_page
 
+    if not st.session_state.authenticated:
+        if page not in ["Login", "Register"]:
+            st.session_state.current_page = "Login"
+            st.rerun()
+
+    # -------------------------
+    # PAGE ROUTING
+    # -------------------------
     if page == "Register":
         register.show()
 
@@ -113,28 +155,16 @@ def main():
         login.show()
 
     # -------------------------
-    # TOKEN EXPIRY CHECK
+    # TOKEN EXPIRY CHECK (✅ SAFE)
     # -------------------------
     if st.session_state.authenticated and st.session_state.token_expires_at:
-        if datetime.now() > st.session_state.token_expires_at:
+        if datetime.now(timezone.utc) > st.session_state.token_expires_at:
             handle_logout()
             st.error("Session expired. Please log in again.")
 
 
 # -------------------------
-# LOGOUT HANDLER
-# -------------------------
-def handle_logout():
-    st.session_state.authenticated = False
-    st.session_state.user = None
-    st.session_state.token = None
-    st.session_state.token_expires_at = None
-    st.session_state.current_page = "Login"
-    st.rerun()
-
-
-# -------------------------
-# RUN APP
+# RUN
 # -------------------------
 if __name__ == "__main__":
     main()

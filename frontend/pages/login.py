@@ -1,42 +1,55 @@
 import streamlit as st
 from datetime import datetime, timedelta
-from utils import api, session
+
+from utils.api import APIClient
+from utils.session import login as save_session
 
 
 def show():
     st.title("🔐 Login")
 
-    username = st.text_input("Username")
+    email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        if not username or not password:
-            st.error("Username and password are required")
+
+        if not email or not password:
+            st.error("Please enter email and password")
             return
 
+        client = APIClient()
+
         payload = {
-            "username": username,
+            "username": email,
             "password": password
         }
 
-        with st.spinner("Logging in..."):
-            response = api.post("/auth/login", json=payload)
+        try:
+            response = client.post("auth/login", json=payload)
 
-        data = response.get("data")
+            data = response["data"]
+            token = data["access_token"]
+            user = data["user"]
 
-        if data and "access_token" in data:
-            expires_at = datetime.now() + timedelta(
-                seconds=data.get("expires_in", 1800)
-            )
+            expires_at = datetime.utcnow() + timedelta(minutes=60)
 
-            session.login(
-                user=data.get("user"),
-                token=data.get("access_token"),
-                expires_at=expires_at
-            )
+            # ✅ Save backend session
+            save_session(user=user, token=token, expires_at=expires_at)
 
+            # 🔥 REQUIRED FOR STREAMLIT ROUTING
+            st.session_state.authenticated = True
+            st.session_state.user = user
+            st.session_state.token = token
+            st.session_state.token_expires_at = expires_at
             st.session_state.current_page = "Dashboard"
+
             st.success("Login successful")
             st.rerun()
-        else:
-            st.error(response.get("message", "Login failed"))
+
+        except Exception as e:
+            st.error("Login failed")
+
+            if hasattr(e, "response") and e.response is not None:
+                st.json(e.response.json())
+            else:
+                st.exception(e)

@@ -1,7 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
-from pydantic import field_validator
 
 
 class UserBase(BaseModel):
@@ -13,11 +12,12 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(
-    ...,
-    min_length=8,
-    max_length=72,
-    description="Password must be between 8 and 72 characters"
-)
+        ...,
+        min_length=8,
+        max_length=72,
+        description="Password must be between 8 and 72 characters"
+    )
+
     @field_validator("password")
     @classmethod
     def validate_password_length(cls, v: str):
@@ -31,14 +31,16 @@ class UserLogin(BaseModel):
     password: str
 
 
-class UserRead(BaseModel):
+class UserRead(UserBase):
     id: int
-    username: str
-    email: str
-    is_active: bool
-    is_superuser: bool
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
+
+
+# ✅ ALIAS FOR EASY IMPORTS (THIS FIXES YOUR ERROR)
+class User(UserRead):
+    pass

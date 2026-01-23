@@ -14,7 +14,7 @@ from app.schemas.data import (
 from app.services.data_processor import DataProcessor
 from app.utils.error_handling import ErrorHandler, KPIError
    
-router = APIRouter()
+router = APIRouter(prefix="/data", tags=["Data"])
    
 @router.post("/upload/sales", response_model=DataUploadResponse)
 async def upload_sales_data(

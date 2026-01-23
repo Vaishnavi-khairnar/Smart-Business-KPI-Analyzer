@@ -9,6 +9,6 @@ from app.crud.business_unit import get_active_business_units
 router = APIRouter(prefix="/business-units", tags=["Business Units"])
 
 
-@router.get("/", response_model=List[BusinessUnitResponse])
+@router.get("", response_model=List[BusinessUnitResponse])
 def list_business_units(db: Session = Depends(get_db)):
     return get_active_business_units(db)

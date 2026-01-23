@@ -25,7 +25,12 @@ class AuthService:
         self, db: Session, username: str, password: str
     ) -> UserRead:
         try:
+            # ✅ Try to find user by username first
             user = crud_user.get_by_username(db, username=username)
+            
+            # ✅ If not found, try by email (allows login with email)
+            if not user:
+                user = crud_user.get_by_email(db, email=username)
 
             if not user or not verify_password(password, user.hashed_password):
                 raise KPIError(

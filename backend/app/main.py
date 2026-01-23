@@ -11,7 +11,7 @@ import app.models.sale
 import app.models.cost
 import app.models.marketing_spend
 
-from api.endpoints import auth, kpis, data
+from api.endpoints import auth, kpis, data, business_units
 
 app = FastAPI(title="KPI Analyzer API")
 
@@ -20,3 +20,4 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(kpis.router, prefix="/api/v1")
 app.include_router(data.router, prefix="/api/v1")
+app.include_router(business_units.router, prefix="/api/v1")

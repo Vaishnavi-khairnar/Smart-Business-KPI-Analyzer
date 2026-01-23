@@ -44,53 +44,62 @@ class APIClient:
         self,
         method: str,
         endpoint: str,
+        raise_for_status: bool = True,
         **kwargs
     ) -> requests.Response:
 
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
-        headers = kwargs.pop("headers", {})
+        
+        # 1. Prepare additional headers (Auth + custom)
+        extra_headers = kwargs.pop("headers", {})
+        extra_headers.update(self._get_auth_headers())
 
-        # 🔐 Inject auth headers automatically
-        headers.update(self._get_auth_headers())
+        # 2. Handle File Uploads: Suppress session's default Content-Type
+        if "files" in kwargs:
+            extra_headers["Content-Type"] = None
 
+        # 3. Handle JSON: Avoid passing json=None as it can trigger a body with "null"
+        if "json" in kwargs and kwargs["json"] is None:
+            kwargs.pop("json")
+
+        # 4. Execute request
         response = self.session.request(
             method=method,
             url=url,
-            headers=headers,
+            headers=extra_headers,
             timeout=30,
             **kwargs
         )
 
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            # 🔥 Clean API error surfacing
+        if raise_for_status:
             try:
-                detail = response.json()
-            except Exception:
-                detail = response.text
+                response.raise_for_status()
+            except requests.HTTPError as e:
+                # 🔥 Clean API error surfacing
+                try:
+                    detail = response.json()
+                except Exception:
+                    detail = response.text
 
-            raise RuntimeError({
-                "status_code": response.status_code,
-                "error": detail
-            }) from e
+                raise RuntimeError({
+                    "status_code": response.status_code,
+                    "error": detail
+                }) from e
 
         return response
 
     # =========================
     # PUBLIC HTTP METHODS
     # =========================
-    def get(self, endpoint: str, params: dict = None) -> Any:
-        response = self._make_request(
-            "GET", endpoint, params=params
+    def get(self, endpoint: str, params: dict = None, raise_for_status: bool = True, **kwargs) -> requests.Response:
+        return self._make_request(
+            "GET", endpoint, params=params, raise_for_status=raise_for_status, **kwargs
         )
-        return response.json()
 
-    def post(self, endpoint: str, json: dict = None) -> Any:
-        response = self._make_request(
-            "POST", endpoint, json=json
+    def post(self, endpoint: str, json: dict = None, raise_for_status: bool = True, **kwargs) -> requests.Response:
+        return self._make_request(
+            "POST", endpoint, json=json, raise_for_status=raise_for_status, **kwargs
         )
-        return response.json()
 
     def delete(self, endpoint: str) -> bool:
         self._make_request("DELETE", endpoint)
@@ -118,7 +127,8 @@ class APIClient:
         if kpi_types:
             params["kpi_types"] = kpi_types
 
-        data = self.get("kpis", params=params)
+        response = self.get("kpis", params=params)
+        data = response.json()
 
         df = pd.DataFrame(data)
 
@@ -131,12 +141,14 @@ class APIClient:
         return df
 
     def get_business_units(self) -> List[str]:
-        data = self.get("business-units")
+        response = self.get("business-units")
+        data = response.json()
         return [bu["name"] for bu in data]
 
 
     def get_kpi_types(self) -> List[str]:
-        data = self.get("kpis/types")
+        response = self.get("kpis/types")
+        data = response.json()
         return data.get("kpi_types", [])
 
     def calculate_kpi(
@@ -156,72 +168,74 @@ class APIClient:
         if business_units:
             payload["business_units"] = business_units
 
-        return self.post("kpis/calculate", json=payload)
-def get_scheduled_reports(self) -> List[Dict[str, Any]]:
-    """Get list of scheduled reports
-    
-    Returns:
-        List of scheduled reports
-    """
-    response = self._make_request('GET', 'reports/scheduled')
-    return response.json()
-
-def schedule_report(self, report_config: Dict[str, Any]) -> Dict[str, Any]:
-    """Schedule a new report
-    
-    Args:
-        report_config: Report configuration
+        response = self.post("kpis/calculate", json=payload)
+        return response.json()
         
-    Returns:
-        Dictionary with scheduled report details
-    """
-    response = self._make_request('POST', 'reports/schedule', json=report_config)
-    return response.json()
-
-def delete_scheduled_report(self, report_id: str) -> Dict[str, Any]:
-    """Delete a scheduled report
-    
-    Args:
-        report_id: ID of the report to delete
+    def get_scheduled_reports(self) -> List[Dict[str, Any]]:
+        """Get list of scheduled reports
         
-    Returns:
-        Dictionary with deletion result
-    """
-    response = self._make_request('DELETE', f'reports/scheduled/{report_id}')
-    return response.json()
+        Returns:
+            List of scheduled reports
+        """
+        response = self._make_request('GET', 'reports/scheduled')
+        return response.json()
 
-def get_report_templates(self) -> List[Dict[str, Any]]:
-    """Get available report templates
-    
-    Returns:
-        List of report templates
-    """
-    response = self._make_request('GET', 'reports/templates')
-    return response.json()
-
-def generate_report(self, report_config: Dict[str, Any], format: str = "excel") -> bytes:
-    """Generate a report in specified format
-    
-    Args:
-        report_config: Report configuration
-        format: Export format (csv, excel, pdf)
+    def schedule_report(self, report_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Schedule a new report
         
-    Returns:
-        Report data as bytes
-    """
-    params = report_config.copy()
-    
-    if format == "csv":
-        params['include_summary'] = report_config.get('include_summary', True)
-        response = self._make_request('GET', 'reports/export/csv', params=params)
-    elif format == "excel":
-        params['include_charts'] = report_config.get('include_charts', True)
-        response = self._make_request('GET', 'reports/export/excel', params=params)
-    else:  # PDF
-        params['template'] = report_config.get('template', 'standard')
-        response = self._make_request('GET', 'reports/export/pdf', params=params)
-    
-    return response.content
+        Args:
+            report_config: Report configuration
+            
+        Returns:
+            Dictionary with scheduled report details
+        """
+        response = self._make_request('POST', 'reports/schedule', json=report_config)
+        return response.json()
+
+    def delete_scheduled_report(self, report_id: str) -> Dict[str, Any]:
+        """Delete a scheduled report
+        
+        Args:
+            report_id: ID of the report to delete
+            
+        Returns:
+            Dictionary with deletion result
+        """
+        response = self._make_request('DELETE', f'reports/scheduled/{report_id}')
+        return response.json()
+
+    def get_report_templates(self) -> List[Dict[str, Any]]:
+        """Get available report templates
+        
+        Returns:
+            List of report templates
+        """
+        response = self._make_request('GET', 'reports/templates')
+        return response.json()
+
+    def generate_report(self, report_config: Dict[str, Any], format: str = "excel") -> bytes:
+        """Generate a report in specified format
+        
+        Args:
+            report_config: Report configuration
+            format: Export format (csv, excel, pdf)
+            
+        Returns:
+            Report data as bytes
+        """
+        params = report_config.copy()
+        
+        if format == "csv":
+            params['include_summary'] = report_config.get('include_summary', True)
+            response = self._make_request('GET', 'reports/export/csv', params=params)
+        elif format == "excel":
+            params['include_charts'] = report_config.get('include_charts', True)
+            response = self._make_request('GET', 'reports/export/excel', params=params)
+        else:  # PDF
+            params['template'] = report_config.get('template', 'standard')
+            response = self._make_request('GET', 'reports/export/pdf', params=params)
+        
+        return response.content
 
 # 🔥 DEBUG CONFIRMATION
-print("🔥 utils.api LOADED FROM:", __file__)
+print("🔥 utils.api v2 LOADED (with **kwargs) FROM:", __file__)

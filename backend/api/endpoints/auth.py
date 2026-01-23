@@ -15,7 +15,7 @@ from app.models.user import User
 # =====================================================
 # OAuth2 scheme (JWT)
 # =====================================================
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 router = APIRouter(
     prefix="/auth",
@@ -38,19 +38,25 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
     except KPIError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # =====================================================
-# LOGIN
+# LOGIN (USERNAME OR EMAIL)
 # =====================================================
 @router.post("/login", response_model=AuthResponse)
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
         auth_service = AuthService()
+
+        # ✅ allow username OR email
+        identifier = user.username.strip().lower()
+
         user_response = auth_service.authenticate_user(
-            db, user.username, user.password
+            db,
+            identifier,
+            user.password
         )
 
         access_token_expires = timedelta(minutes=30)
@@ -74,8 +80,8 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # =====================================================
@@ -110,8 +116,8 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # =====================================================
@@ -136,20 +142,19 @@ async def me(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # =====================================================
-# DEPENDENCY: GET CURRENT USER (IMPORTANT)
+# DEPENDENCY: GET CURRENT USER
 # =====================================================
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    FastAPI dependency used to protect routes.
-    Can be imported in other modules (reports, dashboard, etc.)
+    Dependency for protected routes
     """
     auth_service = AuthService()
     return auth_service.get_current_user(token, db)

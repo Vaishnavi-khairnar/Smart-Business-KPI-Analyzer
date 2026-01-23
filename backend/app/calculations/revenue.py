@@ -1,13 +1,13 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
+import pandas as pd
 from .base import BaseCalculation
-from app.models.sale import Sale
 
 
 class RevenueCalculation(BaseCalculation):
     """
     Calculates total revenue for a given period.
-    Works with DB ORM objects (NOT pandas).
+    Works with pandas DataFrames.
     """
 
     def __init__(self):
@@ -30,19 +30,38 @@ class RevenueCalculation(BaseCalculation):
             if "sales" not in data:
                 raise ValueError("Sales data is required for revenue calculation")
 
-            sales: List[Sale] = data["sales"]
+            sales_df: pd.DataFrame = data["sales"]
 
-            if not sales:
-                raise ValueError("No sales data available for the selected period")
+            if sales_df.empty:
+                return {
+                    "value": 0.0,
+                    "transaction_count": 0,
+                    "average_transaction": 0.0,
+                    "period_start": period_start.isoformat(),
+                    "period_end": period_end.isoformat(),
+                    "currency": "USD",
+                }
+
+            # Filter sales data for the specified period
+            period_sales = sales_df[
+                (sales_df['date'] >= period_start) & (sales_df['date'] <= period_end)
+            ]
+
+            if period_sales.empty:
+                return {
+                    "value": 0.0,
+                    "transaction_count": 0,
+                    "average_transaction": 0.0,
+                    "period_start": period_start.isoformat(),
+                    "period_end": period_end.isoformat(),
+                    "currency": "USD",
+                }
 
             # -------------------------------------------------
             # Calculate revenue
             # -------------------------------------------------
-            total_revenue = sum(
-                sale.amount for sale in sales if sale.amount is not None
-            )
-
-            transaction_count = len(sales)
+            total_revenue = period_sales['amount'].sum()
+            transaction_count = len(period_sales)
             average_transaction = (
                 total_revenue / transaction_count
                 if transaction_count > 0
@@ -63,9 +82,16 @@ class RevenueCalculation(BaseCalculation):
 
     def validate_data(self, data: Dict[str, Any]) -> bool:
         """
-        Validate that sales data exists and is non-empty.
+        Validate that sales data exists and is a non-empty DataFrame.
         """
-        return "sales" in data and isinstance(data["sales"], list)
+        if "sales" not in data or not isinstance(data["sales"], pd.DataFrame):
+            return False
+        
+        df = data["sales"]
+        required_columns = {"date", "amount"}
+        
+        return not df.empty and required_columns.issubset(df.columns)
+
 
     def get_required_data_fields(self) -> list:
         """

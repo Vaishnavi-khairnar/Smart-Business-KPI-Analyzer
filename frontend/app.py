@@ -132,6 +132,11 @@ def main():
         if page not in ["Login", "Register"]:
             st.session_state.current_page = "Login"
             st.rerun()
+    else:
+        # ✅ Redirect authenticated users away from Login/Register
+        if page in ["Login", "Register"]:
+            st.session_state.current_page = "Dashboard"
+            st.rerun()
 
     # -------------------------
     # PAGE ROUTING

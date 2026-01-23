@@ -8,18 +8,7 @@ from app.utils.auth import verify_password, get_password_hash
 from app.utils.error_handling import KPIError
 
 
-# =====================================================
-# DATABASE FIXTURE
-# =====================================================
-@pytest.fixture(scope="function")
-def db_session():
-    Base.metadata.create_all(bind=engine)
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-        Base.metadata.drop_all(bind=engine)
+
 
 
 # =====================================================

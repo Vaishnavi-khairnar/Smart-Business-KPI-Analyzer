@@ -1,9 +1,14 @@
 import streamlit as st
 import pandas as pd
-from utils import api, session
+from utils.api import APIClient
+from utils.session import is_authenticated
 
 def show():
     """Display data upload page."""
+    if not is_authenticated():
+        st.error("🔒 Please login to access the upload page.")
+        st.stop()
+
     st.title("Upload Business Data")
 
     uploaded_file = st.file_uploader(
@@ -34,21 +39,37 @@ def show():
 
             # Upload
             if st.button("Upload to Database", type="primary"):
-                if not session.is_logged_in():
-                    st.error("Please log in to upload data.")
-                    return
-
+                client = APIClient()
                 with st.spinner("Uploading data..."):
-                    response = api.post(
+                    # ✅ CRITICAL: Reset file pointer after pd.read_csv()
+                    uploaded_file.seek(0)
+                    
+                    # The backend expects a file in the 'file' field
+                    # Explicitly provide filename and type for better compatibility
+                    files = {
+                        "file": (uploaded_file.name, uploaded_file, uploaded_file.type)
+                    }
+                    
+                    response = client.post(
                         "/data/upload/sales",
-                        files={"file": uploaded_file}
+                        files=files,
+                        raise_for_status=False
                     )
 
-                    if response.get("success"):
-                        st.success(f"Uploaded {len(df)} records successfully!")
-                        st.rerun()
+                    if response.status_code in (200, 201):
+                        res_data = response.json()
+                        st.success(res_data.get("message", "Uploaded successfully!"))
+                        if res_data.get("errors"):
+                            with st.expander("Show processing warnings"):
+                                for err in res_data["errors"]:
+                                    st.warning(err)
+                        st.balloons()
                     else:
-                        st.error(response.get("message", "Upload failed"))
+                        try:
+                            err_detail = response.json().get("detail", "Upload failed")
+                        except:
+                            err_detail = response.text
+                        st.error(f"Upload failed: {err_detail}")
 
         except Exception as e:
             st.error(f"Error processing file: {e}")

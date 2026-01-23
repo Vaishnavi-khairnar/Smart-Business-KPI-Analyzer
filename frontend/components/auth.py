@@ -1,36 +1,43 @@
 from datetime import datetime, timedelta
 import streamlit as st
-import requests
 from app import handle_logout
-from utils import api, session
+from utils.api import APIClient
 
    
 def login_form():
-       """Display login form."""
-       with st.form("Login"):
-           username = st.text_input("Username", key="login_username")
-           password = st.text_input("Password", type="password", key="login_password")
-           submitted = st.form_submit_button("Login")
-           
-           if submitted:
-               # Call API to authenticate
-               response = api.post("/auth/login", {
-                   "username": username,
-                   "password": password
-               })
-               
-               if response.get("success", False):
-                   st.error("Login failed. Please check your credentials.")
-               elif response.get("access_token"):
-                   # Store token in session state
-                   st.session_state.authenticated = True
-                   st.session_state.user = response.get("user")
-                   st.session_state.token = response.get("access_token")
-                   st.session_state.token_expires_at = datetime.now() + timedelta(minutes=30)
-                   st.success("Login successful!")
-                   st.rerun()
-               else:
-                   st.error(f"Login failed: {response.get('message', 'Unknown error')}")
+    """Display login form."""
+    with st.form("Login"):
+        email = st.text_input("Email/Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        submitted = st.form_submit_button("Login")
+        
+        if submitted:
+            client = APIClient()
+            # Call API to authenticate
+            payload = {
+                "username": email,
+                "password": password
+            }
+            try:
+                response = client.post("/auth/login", json=payload, raise_for_status=False)
+                
+                if response.status_code in (200, 201):
+                    data = response.json().get("data", {})
+                    # Store session
+                    from utils.session import login as save_session
+                    save_session(
+                        user=data.get("user"),
+                        token=data.get("access_token"),
+                        expires_at=datetime.utcnow() + timedelta(seconds=data.get("expires_in", 1800))
+                    )
+                    st.success("Login successful! 🎉")
+                    st.rerun()
+                elif response.status_code == 401:
+                    st.error("❌ Invalid email/username or password")
+                else:
+                    st.error(f"Login failed: {response.text}")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
    
 def logout_button():
        """Display logout button."""
